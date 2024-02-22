@@ -35,41 +35,7 @@ namespace allan_ros {
 
         RCLCPP_INFO_STREAM_ONCE(get_logger(), "IMU Topic set to : " << imu_topic.as_string());
         RCLCPP_INFO_STREAM_ONCE(get_logger(), "IMU Sample rate set to : " << sample_rate.as_int());
-        // TODO : check all parameters are in the right format  
-    }
-
-    void AllanNode::deserialize_px4_vehicle_imu_status(rclcpp::SerializedMessage& serialized_msg) {
-        rclcpp::Serialization<px4_vehicle_imu_status> serialization;
-        px4_vehicle_imu_status deserialized_msg;
-
-        serialization.deserialize_message(&serialized_msg, &deserialized_msg);
-
-        imu::SampleFormat measurement;
-        measurement.time_stamp = deserialized_msg.timestamp;
-        measurement.linear_accel = Eigen::Vector3d(deserialized_msg.mean_accel[0],
-                                                deserialized_msg.mean_accel[1], deserialized_msg.mean_accel[2]);
-
-        measurement.angular_vel = Eigen::Vector3d(deserialized_msg.mean_gyro[0], 
-                                                deserialized_msg.mean_gyro[1], deserialized_msg.mean_gyro[2]); 
-
-        imu::sample_buffer.emplace_back(measurement);
-    }
-
-    void AllanNode::deserialize_px4_sensor_combined(rclcpp::SerializedMessage& serialized_msg) {
-        rclcpp::Serialization<px4_sensor_combined> serialization;
-        px4_sensor_combined deserialized_msg;
-
-        serialization.deserialize_message(&serialized_msg, &deserialized_msg);
-
-        imu::SampleFormat measurement;
-        measurement.time_stamp = deserialized_msg.timestamp;
-        measurement.linear_accel = Eigen::Vector3d(deserialized_msg.accelerometer_m_s2[0],
-                                                deserialized_msg.accelerometer_m_s2[1], deserialized_msg.accelerometer_m_s2[2]);
-
-        measurement.angular_vel = Eigen::Vector3d(deserialized_msg.gyro_rad[0], 
-                                                deserialized_msg.gyro_rad[1], deserialized_msg.gyro_rad[2]); 
-
-        imu::sample_buffer.emplace_back(measurement);
+        // TODO : check all parameters are in the right format
     }
 
     void AllanNode::deserialize_ros(rclcpp::SerializedMessage& serialized_msg) {
@@ -82,10 +48,10 @@ namespace allan_ros {
         measurement.linear_accel = Eigen::Vector3d(deserialized_msg.linear_acceleration.x,
                                                 deserialized_msg.linear_acceleration.y, deserialized_msg.linear_acceleration.z);
 
-        measurement.angular_vel = Eigen::Vector3d(deserialized_msg.angular_velocity.x, 
-                                                deserialized_msg.angular_velocity.y, deserialized_msg.angular_velocity.z); 
+        measurement.angular_vel = Eigen::Vector3d(deserialized_msg.angular_velocity.x,
+                                                deserialized_msg.angular_velocity.y, deserialized_msg.angular_velocity.z);
 
-        imu::sample_buffer.emplace_back(measurement);  
+        imu::sample_buffer.emplace_back(measurement);
     }
 
     static bool ends_with(std::string_view str, std::string_view suffix) {
@@ -100,7 +66,7 @@ namespace allan_ros {
 	} else {
 		bag_storage_options.storage_id = "sqlite3";
 	}
-        
+
         bag_converter_options.input_serialization_format = rmw_get_serialization_format();
         bag_converter_options.output_serialization_format = rmw_get_serialization_format();
 
@@ -108,10 +74,10 @@ namespace allan_ros {
 
         first_msg = true;
 
-        // TODO : check if bag and topic exists, if not notify and exit 
+        // TODO : check if bag and topic exists, if not notify and exit
 
         bag_info = bag_reader.get_metadata();
-        bag_length = std::chrono::duration_cast<std::chrono::seconds>(bag_info.duration); 
+        bag_length = std::chrono::duration_cast<std::chrono::seconds>(bag_info.duration);
 
         RCLCPP_INFO_STREAM_ONCE(get_logger(), "Bag length (Seconds): " << bag_length.count());
         RCLCPP_INFO_STREAM_ONCE(get_logger(), "Sampling data from bag...");
@@ -121,7 +87,7 @@ namespace allan_ros {
             auto bag_message = bag_reader.read_next();
 
             if (bag_message->topic_name == imu_topic.as_string()) {
-                
+
                 sample_count += 1;
 
                 if (sample_count % skip_step != 0 || sample_count / publish_rate.as_int() > bag_length.count()) {
@@ -144,11 +110,7 @@ namespace allan_ros {
 
                 if (msg_type.as_string() == "ros") {
                     deserialize_ros(serialized_msg);
-                } else if (msg_type.as_string() == "px4_vehicleimustatus") {
-                    deserialize_px4_vehicle_imu_status(serialized_msg);
-                } else if (msg_type.as_string() == "px4_sensorcombined") {
-                    deserialize_px4_sensor_combined(serialized_msg);
-		        } else {
+                } else {
                     RCLCPP_ERROR(get_logger(), "Unknown message type, check 'config.yaml'");
                 }
             }

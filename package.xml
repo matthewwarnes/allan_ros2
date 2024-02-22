@@ -14,7 +14,6 @@
   <depend>sensor_msgs</depend>
   <depend>rosbag2_cpp</depend>
   <depend>ament_index_cpp</depend>
-  <depend>px4_msgs</depend>
 
   <exec_depend>ros2launch</exec_depend>
 

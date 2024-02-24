@@ -1,0 +1,7 @@
+allan_node:
+  ros__parameters:
+     topic: /imu
+     bag_path: imu_noise.bag
+     msg_type: ros
+     publish_rate: 200
+     sample_rate: 200
